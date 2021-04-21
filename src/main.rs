@@ -8,6 +8,7 @@ mod magentoclient;
 mod config;
 mod elasticsearch;
 mod entities;
+mod adapters;
 
 fn main() {
     // Initialize logger

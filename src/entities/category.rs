@@ -1,5 +1,6 @@
 use serde_json::{Map, Value};
 use serde_json::error::Error;
+use log::{info};
 use crate::magentoclient::SerializableMagentoObject;
 
 pub struct Category {
@@ -15,7 +16,6 @@ impl SerializableMagentoObject for Category {
         self.value.to_owned()
     }
 }
-
 
 
 impl Category {
@@ -40,9 +40,8 @@ impl Category {
         let mut map = Map::new();
 
         for item in custom_attributes.iter() {
-            let attribute_code = item["attribute_code"].as_str().unwrap();
+            let attribute_code = item["attribute_code"].as_str().unwrap().to_string();
             let value = item["value"].to_owned();
-            println!("Code: {}", attribute_code);
             map.insert(attribute_code, value);
         }
 
@@ -50,5 +49,34 @@ impl Category {
 
         let val = serde_json::to_value(output).unwrap();
         Ok(Category { id, value: val })
+    }
+}
+
+pub struct CategoryMapper {}
+
+impl CategoryMapper {
+
+    pub fn new() -> Self {
+        CategoryMapper {}
+    }
+
+    fn map_single(&self, input: &Value) -> Result<Category, serde_json::error::Error> {
+        Category::from_value(input)
+    }
+
+    pub fn map(&self, categories: Vec<Value>) -> Result<Vec<Category>, serde_json::error::Error> {
+        let output = categories.iter().map(|category| {
+            match self.map_single(category) {
+                Ok(p) => p,
+                Err(err) => {
+                    info!("Cannot parse category object {:?}", err);
+                    Category { id: "".to_string(), value: Value::Null }
+                }
+            }
+        })
+            .filter(|val| val.value().is_null() == false)
+            .collect::<Vec<Category>>();
+
+        Ok(output)
     }
 }

@@ -5,6 +5,12 @@ use std::process;
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ElasticsearchConfiguration {
+    pub url: String,
+    pub index: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MagentoConfiguration {
     pub url: String,
     pub consumerKey: String,
@@ -17,7 +23,7 @@ pub struct MagentoConfiguration {
 pub struct AppConfiguration {
     pub version: String,
     pub redis: HashMap<String, String>,
-    pub elasticsearch: HashMap<String, String>,
+    pub elasticsearch: ElasticsearchConfiguration,
     pub magento: MagentoConfiguration
 }
 

@@ -4,7 +4,8 @@
     "url": "redis://127.0.0.1/"
   },
   "elasticsearch": {
-    "url": "http://localhost:9200"
+    "url": "http://localhost:9200",
+    "index": "vue_storefront_catalog"
   },
   "magento": {
     "url": "https://mage.meringer.staging.grupakmk.pl/rest",

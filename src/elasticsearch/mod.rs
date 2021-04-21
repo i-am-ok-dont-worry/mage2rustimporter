@@ -7,58 +7,22 @@ use serde::{Serialize, Deserialize};
 use crate::magentoclient::SerializableMagentoObject;
 use std::time::{Instant, Duration};
 use std::rc::Rc;
+use crate::config::ElasticsearchConfiguration;
 
+#[derive(Clone)]
 pub struct ESClient {
-    client: Elasticsearch
+    client: Elasticsearch,
+    config: ElasticsearchConfiguration
 }
 
 impl ESClient {
-    pub fn new() -> ESClient {
-        ESClient { client: Elasticsearch::default() }
+    pub fn new(config: ElasticsearchConfiguration) -> ESClient {
+        ESClient { client: Elasticsearch::default(), config }
     }
 
-    #[tokio::main]
-    pub async fn test (&self) -> Result<(), Box<dyn std::error::Error>> {
-        /*let search_response = self.client
-            .search(SearchParts::None)
-            .body(json!({
-                "query": {
-                    "match_all": {}
-                }
-            }))
-            .allow_no_indices(true)
-            .send()
-            .await
-            .unwrap_or_else(|e| {
-                println!("Error while connecting to Elasticsearch. Check your connection on localhost:9200");
-                process::exit(1);
-            });*/
-        let search_response = self.client
-            .index(IndexParts::IndexId("tweets", "1"))
-            .body(json!({
-                "id": 1,
-                "user": "kimchy",
-                "post_date": "2009-11-15T00:00:00Z",
-                "message": "Trying out Elasticsearch, so far so good?"
-            }))
-            .send()
-            .await?;
-
-        // get the HTTP response status code
-        let status_code = search_response.status_code();
-
-        // read the response body. Consumes search_response
-        let response_body = search_response.json::<Value>().await?;
-
-        let failed_shards = response_body["_shards"]["failed"].as_i64().unwrap();
-        println!("Status code: {}", status_code);
-        println!("Failed shards: {}", failed_shards);
-
-        Ok(())
-    }
 
     #[tokio::main]
-    pub async fn index<T>(&self, index: &str, docs: Vec<T>, time: Rc<Instant>) -> Result<(), Box<dyn std::error::Error>> where T: SerializableMagentoObject {
+    pub async fn index<T>(&self, index: &str, docs: Vec<T>) -> Result<(), Box<dyn std::error::Error>> where T: SerializableMagentoObject {
         let mut body: Vec<JsonBody<_>> = Vec::with_capacity(docs.len());
         for doc in docs.iter() {
             let id = doc.id();
@@ -68,17 +32,16 @@ impl ESClient {
         }
 
         let response = self.client
-            .bulk(BulkParts::Index(index))
+            .bulk(BulkParts::Index(&format!("{}_{}", self.config.index, index)))
             .body(body)
             .send()
             .await?;
 
         let successful = response.status_code().is_success();
         let response_body = response.json::<Value>().await?;
-        let elapsed = time.elapsed();
 
         if successful {
-            info!("Successfully indexed {:?} documents in {:?}", docs.len(), elapsed);
+            info!("Successfully indexed {:?} documents", docs.len());
         } else {
             error!("Bulk operation failed while saving {:?} entity", index);
         }

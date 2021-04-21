@@ -5,6 +5,13 @@ use serde_json::to_string_pretty;
 use crate::elasticsearch::ESClient;
 use std::time::{Duration, Instant};
 use std::rc::Rc;
+use crate::entities::product::ProductMapper;
+use crate::mageimpoter::worker::ImportWorker;
+use std::thread;
+use std::sync::{Arc, Mutex};
+use clap::App;
+
+mod worker;
 
 pub struct Mage2Importer {
     config: AppConfiguration,
@@ -18,20 +25,26 @@ impl Mage2Importer {
         let configuration = AppConfiguration::new(config);
         let mage_configuration = configuration.clone().magento;
         let rest_client = MagentoRestClient::new(mage_configuration);
-        let es_client = ESClient::new();
+        let es_client = ESClient::new(configuration.clone().elasticsearch);
         info!("Initialized Magento2 importer");
 
         Mage2Importer { config: configuration, magento_rest_client: rest_client, es: es_client }
     }
 
     pub fn run (&self) {
-        let start = Instant::now();
-        match self.magento_rest_client.fetch_categories() {
-            Ok(res) => {
-                self.es.index("category", res, Rc::new(start));
-            },
-            Err(err) => info!("Cannot fetch attributes {:?}", err)
-        }
+        let matches = App::new("MyApp")
+            .arg("<adapter> 'Sets a adapter'")
+            .arg("-i, --ids=[IDS] 'Sets a custom ids'")
+            .get_matches();
 
+        let adapter_name = matches.value_of("adapter").unwrap().to_string();
+        let ids = match matches.value_of("ids") {
+            Some(ids) => Some(ids.split(",").collect()),
+            None => None
+        };
+
+        // Run import im separate thread
+        let mut worker = ImportWorker::new(self.magento_rest_client.clone(), self.es.clone());
+        worker.start(adapter_name, ids);
     }
 }
