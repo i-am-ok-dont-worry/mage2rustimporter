@@ -1,0 +1,20 @@
+[package]
+name = "mage-rust-importer"
+version = "0.1.0"
+authors = ["Mateusz <mateusz.pytel@grupakmk.pl>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = {version = "1.0", features = ["derive"]}
+serde_json = "1.0"
+elasticsearch = "7.12.0-alpha.1"
+tokio = { version = "*", features = ["full"] }
+reqwest = { version = "0.11.2", features = ["blocking"] }
+async-trait = "0.1.48"
+log = "0.4.14"
+env_logger = "0.8.3"
+
+[dependencies.logger]
+git = "https://github.com/iron/logger.git"
