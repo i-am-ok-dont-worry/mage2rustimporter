@@ -31,19 +31,7 @@ impl Mage2Importer {
         Mage2Importer { config: configuration, magento_rest_client: rest_client, es: es_client }
     }
 
-    pub fn run (&self) {
-        let matches = App::new("MyApp")
-            .arg("<adapter> 'Sets a adapter'")
-            .arg("-i, --ids=[IDS] 'Sets a custom ids'")
-            .get_matches();
-
-        let adapter_name = matches.value_of("adapter").unwrap().to_string();
-        let ids = match matches.value_of("ids") {
-            Some(ids) => Some(ids.split(",").collect()),
-            None => None
-        };
-
-        // Run import im separate thread
+    pub fn run (&self, adapter_name: String, ids: Option<Vec<&str>>) {
         let mut worker = ImportWorker::new(self.magento_rest_client.clone(), self.es.clone());
         worker.start(adapter_name, ids);
     }

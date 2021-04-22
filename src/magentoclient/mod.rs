@@ -85,6 +85,18 @@ impl MagentoRestClient {
         Ok((body.items, true))
     }
 
+    pub fn fetch_categories_by_ids(&self, ids: Vec<&str>) -> Result<(Vec<Value>, bool), MagentoError> {
+        let client = self.get_client()?;
+
+        let joined_ids = ids.join(",");
+        let api_url = format!("{}/categories/list?searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={}&searchCriteria[filter_groups][0][filters][0][condition_type]=in", self.get_api_url(), joined_ids);
+        let body: MagentoSimpleResponse = client.get(api_url).send()?.json()?;
+
+        info!("Importing categories: {:?}", ids);
+
+        Ok((body.items, true))
+    }
+
     pub fn fetch_products(&self, page_size: i32, page: i32) -> Result<(Vec<Value>, bool), MagentoError> {
         let client = self.get_client()?;
 

@@ -24,21 +24,43 @@ impl ImportAdapter for CategoryAdapter {
         info!("Running import for categories");
         let start = Instant::now();
 
-        match self.client.fetch_categories() {
-            Ok((res, finished)) => {
-                let category_mapper = CategoryMapper::new();
-                let categories = category_mapper.map(res);
-                self.es.index("category", categories.unwrap());
+        match ids.clone() {
+            Some(selected_ids) => {
+                match self.client.fetch_categories_by_ids(selected_ids) {
+                    Ok((res, finished)) => {
+                        let category_mapper = CategoryMapper::new();
+                        let categories = category_mapper.map(res);
+                        self.es.index("category", categories.unwrap());
 
-                let elapsed = start.elapsed();
-                info!("Finished page {} in {:?}", self.page, elapsed);
+                        let elapsed = start.elapsed();
+                        info!("Finished page {} in {:?}", self.page, elapsed);
 
-                if finished == false {
-                    self.page = self.page + 1;
-                    self.run(ids);
+                        if finished == false {
+                            self.page = self.page + 1;
+                            self.run(ids);
+                        }
+                    },
+                    Err(err) => info!("Cannot fetch categories {:?}", err)
                 }
             },
-            Err(err) => info!("Cannot fetch categories {:?}", err)
+            None => {
+                match self.client.fetch_categories() {
+                    Ok((res, finished)) => {
+                        let category_mapper = CategoryMapper::new();
+                        let categories = category_mapper.map(res);
+                        self.es.index("category", categories.unwrap());
+
+                        let elapsed = start.elapsed();
+                        info!("Finished page {} in {:?}", self.page, elapsed);
+
+                        if finished == false {
+                            self.page = self.page + 1;
+                            self.run(ids);
+                        }
+                    },
+                    Err(err) => info!("Cannot fetch categories {:?}", err)
+                }
+            }
         }
     }
 }
